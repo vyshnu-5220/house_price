@@ -1,10 +1,11 @@
 from flask import Flask, request
 import pandas as pd
 from sklearn.linear_model import LinearRegression
+import os
 
 app = Flask(__name__)
 
-# Load and train model
+# Load and train the model
 df = pd.read_csv('house_prices.csv')
 X = df[['area', 'bedrooms', 'bathrooms', 'age_of_house', 'distance_to_city_center']]
 y = df['price']
@@ -14,8 +15,10 @@ model.fit(X, y)
 @app.route('/', methods=['GET', 'POST'])
 def home():
     prediction_html = ""
+
     if request.method == 'POST':
         try:
+            # Collect user input
             area = float(request.form['area'])
             bedrooms = int(request.form['bedrooms'])
             bathrooms = int(request.form['bathrooms'])
@@ -30,12 +33,13 @@ def home():
                 'distance_to_city_center': distance
             }])
 
+            # Make prediction
             predicted_price = model.predict(input_df)[0]
-            prediction_html = f"<div class='result'>🏷 Estimated Price: ₹{int(predicted_price):,}</div>"
+            prediction_html = f"<div class='price-box'>🏷 Estimated Price: ₹{int(predicted_price):,}</div>"
         except Exception as e:
             prediction_html = f"<div class='error'>⚠️ Error: {e}</div>"
 
-    # Return the full HTML as response
+    # Return styled HTML with embedded result
     return f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -88,11 +92,15 @@ def home():
         button:hover {{
           background-color: #74b9ff;
         }}
-        .result {{
+        .price-box {{
           margin-top: 30px;
           text-align: center;
           font-size: 20px;
+          background-color: #dff9fb;
+          border-radius: 8px;
+          padding: 15px;
           color: #2d3436;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }}
         .error {{
           margin-top: 30px;
@@ -129,5 +137,7 @@ def home():
     </html>
     """
 
+# 🔒 Use environment PORT for cloud deployment
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
